@@ -430,7 +430,7 @@ export interface MostRecentState {
 }
 
 function nbUrl(nbId: string): string {
-  // Careful, S3 is finicy about what URLs it serves. So
+  // Careful, S3 is finicky about what URLs it serves. So
   // /notebook?nbId=blah  will get redirect to /notebook/
   // because it is a directory with an index.html in it.
   const u = window.location.origin + "/notebook/?nbId=" + nbId;
