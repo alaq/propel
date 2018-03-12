@@ -554,6 +554,13 @@ header {
   img {
     margin-right: $size0;
   }
+
+  a {
+    font-size: $size1;
+    line-height: $size2;
+    color: $textColor;
+    margin: $size1;
+  }
 }
 
 .notebook-container {
@@ -626,7 +633,7 @@ header {
         text-decoration: underline;
       }
 
-      p {
+      p, a {
         margin: 8px;
         color: $base03;
       }

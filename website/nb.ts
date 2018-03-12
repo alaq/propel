@@ -175,7 +175,7 @@ export class Cell extends Component<CellProps, CellState> {
 
   get code(): string {
     return normalizeCode(this.editor ? this.editor.getValue()
-                                     : this.props.code);
+    : this.props.code);
   }
 
   console(...args: string[]) {
@@ -330,32 +330,32 @@ export class Cell extends Component<CellProps, CellState> {
     let insertButton = null;
     if (this.props.onInsertCell) {
       insertButton = h("button", {
-          "class": "insert-button",
-          "onClick": this.clickedInsertCell.bind(this),
-      }, "");
-    }
+        "class": "insert-button",
+        "onClick": this.clickedInsertCell.bind(this),
+    }, "");
+  }
 
-    return h("div", {
-        "class": "notebook-cell",
-        "id": `cell${this.id}`,
-        "ref": (ref => { this.parentDiv = ref; }),
-      },
+  return h("div", {
+      "class": "notebook-cell",
+      "id": `cell${this.id}`,
+      "ref": (ref => { this.parentDiv = ref; }),
+    },
+    h("div", {
+      "class": "input",
+      "ref": (ref => { this.input = ref; }),
+    },
+      // This pre is replaced by CodeMirror if users have JavaScript enabled.
+      h("pre", { }, this.code),
+      deleteButton,
+      runButton,
+    ),
+    h("div", { "class": "output-container" },
       h("div", {
-        "class": "input",
-        "ref": (ref => { this.input = ref; }),
-      },
-        // This pre is replaced by CodeMirror if users have JavaScript enabled.
-        h("pre", { }, this.code),
-        deleteButton,
-        runButton,
-      ),
-      h("div", { "class": "output-container" },
-        h("div", {
-          "class": "output",
-          "id": "output" + this.id,
-          "ref": (ref => { this.output = ref; }),
-        }),
-        insertButton,
+        "class": "output",
+        "id": "output" + this.id,
+        "ref": (ref => { this.output = ref; }),
+      }),
+      insertButton,
       )
     );
   }
@@ -382,10 +382,12 @@ export class FixedCell extends Component<FixedProps, CellState> {
 export interface NotebookRootProps {
   userInfo?: db.UserInfo;
   nbId?: string;
+  profile?: string;
 }
 
 export interface NotebookRootState {
   nbId?: string;
+  profile?: string;
 }
 
 export class NotebookRoot extends Component<NotebookRootProps,
@@ -401,7 +403,15 @@ export class NotebookRoot extends Component<NotebookRootProps,
       nbId = matches ? matches[1] : null;
     }
 
-    this.state = { nbId };
+    let profile;
+    if (this.props.profile) {
+      nbId = this.props.profile;
+    } else {
+      const matches = window.location.search.match(/profile=(\w+)/);
+      profile = matches ? matches[1] : null;
+    }
+
+    this.state = { nbId, profile };
   }
 
   render() {
@@ -410,6 +420,11 @@ export class NotebookRoot extends Component<NotebookRootProps,
       body = h(Notebook, {
         nbId: this.state.nbId,
         userInfo: this.props.userInfo,
+      });
+    } else if (this.state.profile) {
+      body = h(Profile, {
+        profile: this.state.profile,
+        userInfo: this.props.userInfo
       });
     } else {
       body = h(MostRecent, null);
@@ -474,11 +489,53 @@ export class MostRecent extends Component<any, MostRecentState> {
       h("div", {"class": "most-recent-header"},
         h("div", {"class": "most-recent-header-title"},
           h("h2", null, "Recently Updated"),
+      ),
+      h("div", {"class": "most-recent-header-cta"},
+        h("button", { "class": "create-notebook",
+                      "onClick": () => this.onCreate(),
+        }, "+ New Notebook"),
         ),
-        h("div", {"class": "most-recent-header-cta"},
-          h("button", { "class": "create-notebook",
-                        "onClick": () => this.onCreate(),
-          }, "+ New Notebook"),
+      ),
+      h("ol", null, ...notebookList),
+    );
+  }
+}
+
+export interface ProfileState {
+  latest: db.NbInfo[];
+  profile: string;
+}
+
+export class Profile extends Component<any, ProfileState> {
+  async componentWillMount() {
+    // Only query firebase when in the browser.
+    // This is to avoiding calling into firebase during static HTML generation.
+    if (IS_WEB) {
+      const latest = await db.active.queryProfile(this.props.profile);
+      this.setState({ latest });
+    }
+  }
+
+  render() {
+    if (!this.state.latest) {
+      return h(Loading, null);
+    }
+    const notebookList = this.state.latest.map(info => {
+      const snippit = info.doc.cells
+        .map(normalizeCode)
+        .join("\n")
+        .slice(0, 100);
+      const href = nbUrl(info.nbId);
+      return h(
+        "a",
+        { href },
+        h("li", null, h("div", { class: "code-snippit" }, snippit), notebookBlurb(info.doc, false))
+      );
+    });
+    return h("div", { "class": "most-recent" },
+      h("div", {"class": "most-recent-header"},
+        h("div", {"class": "most-recent-header-title"},
+          h("h2", null, this.state.latest[0].doc.owner.displayName + "'s Recently Updated Notebooks")
         ),
       ),
       h("ol", null, ...notebookList),
@@ -548,11 +605,11 @@ export class Notebook extends Component<NotebookProps, NotebookState> {
     doc.title = this.state.typedTitle;
     this.setState({ ...doc, editingTitle: false });
     this.update(doc);
-   }
+  }
 
   async onTypedTitle(event) {
-     this.setState({ typedTitle: event.target.value });
-   }
+    this.setState({ typedTitle: event.target.value });
+  }
 
   async onDelete(i) {
     const doc = this.state.doc;

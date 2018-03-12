@@ -25,6 +25,7 @@ export interface Database {
   updateDoc(nbId: string, doc: NotebookDoc): Promise<void>;
   clone(existingDoc: NotebookDoc): Promise<string>;
   create(): Promise<string>;
+  queryProfile(string): Promise<NbInfo[]>;
   queryLatest(): Promise<NbInfo[]>;
   signIn(): void;
   signOut(): void;
@@ -160,6 +161,19 @@ class DatabaseFB implements Database {
     return out.reverse();
   }
 
+  async queryProfile(uid): Promise<NbInfo[]> {
+    lazyInit();
+    const query = nbCollection.where("owner.uid", "==", uid); // needs an index for .orderBy
+    const snapshots = await query.get();
+    const out = [];
+    snapshots.forEach(snap => {
+      const nbId = snap.id;
+      const doc = snap.data();
+      out.unshift({ nbId, doc });
+    });
+    return out.reverse();
+  }
+
   signIn() {
     lazyInit();
     const provider = new firebase.auth.GithubAuthProvider();
@@ -209,6 +223,11 @@ export class DatabaseMock implements Database {
   async create(): Promise<string> {
     this.inc("create");
     return "createdNbId";
+  }
+
+  async queryProfile(string): Promise<NbInfo[]> {
+    this.inc("queryProfile");
+    return [];
   }
 
   async queryLatest(): Promise<NbInfo[]> {
