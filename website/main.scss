@@ -572,6 +572,24 @@ header {
     box-shadow: inset 0 -1px 0 $borderColor;
     background-color: #fff;
     margin-bottom: 16px;
+    font-size: 18px;
+  }
+}
+
+.profile-blurb {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 8px;
+
+  .blurb {
+    box-shadow: inset 0 -1px 0 $borderColor;
+    background-color: #fff;
+    margin-bottom: 16px;
+  }
+
+  p {
+    font-size: 18px;
+    font-weight: 100;
   }
 }
 

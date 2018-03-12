@@ -520,6 +520,7 @@ export class Profile extends Component<any, ProfileState> {
     if (!this.state.latest) {
       return h(Loading, null);
     }
+    const doc = this.state.latest[0].doc;
     const notebookList = this.state.latest.map(info => {
       const snippit = info.doc.cells
         .map(normalizeCode)
@@ -532,14 +533,29 @@ export class Profile extends Component<any, ProfileState> {
         h("li", null, h("div", { class: "code-snippit" }, snippit), notebookBlurb(info.doc, false))
       );
     });
-    return h("div", { "class": "most-recent" },
-      h("div", {"class": "most-recent-header"},
-        h("div", {"class": "most-recent-header-title"},
-          h("h2", null, this.state.latest[0].doc.owner.displayName + "'s Recently Updated Notebooks")
-        ),
+    const profileBlurb = h("div", { "class": "blurb" }, null, [
+      h("div", { "class": "blurb-avatar" },
+        h(Avatar, { userInfo: doc.owner }),
       ),
-      h("ol", null, ...notebookList),
-    );
+      h("div", { "class": "blurb-name" },
+        h("p", { "class": "displayName" }, doc.owner.displayName),
+      ),
+      h("div", { "class": "date-created" },
+        h("p", { "class": "created" }, `Most Recent Update ${fmtDate(doc.updated)}.`),
+      ),
+    ]);
+
+    return h("div", null,
+      h("div", {"class": "profile-blurb"}, profileBlurb),
+      h("div", { "class": "most-recent" },
+        h("div", {"class": "most-recent-header"},
+          h("div", {"class": "most-recent-header-title"},
+            h("h2", null, doc.owner.displayName + "'s Recently Updated Notebooks")
+          ),
+        ),
+        h("ol", null, ...notebookList),
+      );
+    )
   }
 }
 
@@ -738,7 +754,7 @@ function notebookBlurb(doc: db.NotebookDoc, showDates = true): JSX.Element {
       h(Avatar, { userInfo: doc.owner }),
     ),
     h("div", { "class": "blurb-name" },
-      h("p", { "class": "displayName" }, doc.owner.displayName),
+      h("a", { "class": "displayName", "href": window.location.origin + "/notebook/?profile=" + doc.owner.uid }, doc.owner.displayName),
     ),
     ...dates
   ]);
